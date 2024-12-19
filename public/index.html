@@ -1,0 +1,310 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Realistic avatars — Networked-Aframe</title>
+    <meta name="description" content="Realistic avatars — Networked-Aframe" />
+
+    <script src="https://aframe.io/releases/1.6.0/aframe.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/2.5.0/socket.io.slim.js"></script>
+    <script src="/easyrtc/easyrtc.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/networked-aframe@0.12.3/dist/networked-aframe.min.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-extras@7.5.0/dist/aframe-extras.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/aframe-environment-component@1.3.7/dist/aframe-environment-component.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@fern-solutions/aframe-mirror@1.1.1/dist/mirror.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-cursor-teleport@1.6.0/dist/aframe-cursor-teleport-component.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/aframe-blink-controls@0.4.3/dist/aframe-blink-controls.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/AdaRoseCannon/aframe-xr-boilerplate@bca4792/simple-navmesh-constraint.js"></script>
+    <script src="https://cdn.jsdelivr.net/gh/c-frame/aframe-gltf-model-plus@1.0.0/dist/gltf-model-plus.min.js"></script>
+    <script src="https://unpkg.com/react/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom/umd/react-dom.development.js"></script>
+    <!-- jQuery from Google CDN -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <script src="/dist/components.js"></script>
+    <script defer src="/dist/ui.js"></script>
+
+    <!-- Rate-counter component from the original code -->
+    <script>
+      AFRAME.registerComponent('rate-counter', {
+        schema: { likes: { type: 'int', default: 0 }, dislikes: { type: 'int', default: 0 } },
+
+        init: function () {
+          console.log('rate-counter 初始化成功');
+
+          this.comments = []; // 存储评论列表
+          
+          this.commentButton = document.querySelector('#comment-button');
+          this.commentList = document.querySelector('#comment-list');
+          this.commentContent = document.querySelector('#comment-content');
+          this.inputPlane = document.querySelector('#input-plane');
+          this.submitButton = document.querySelector('#submit-comment-button');
+
+          this.likeButton = document.querySelector('#like-button');
+          this.dislikeButton = document.querySelector('#dislike-button');
+          this.likeCountText = document.querySelector('.like-count');
+          this.dislikeCountText = document.querySelector('.dislike-count');
+
+          this.img1 = document.querySelector('#rate-image');
+
+          NAF.connection.subscribeToDataChannel('rate-update', (senderId, dataType, data, targetId) => {
+            console.log('接收到的完整数据:', { senderId, dataType, data, targetId });
+            try {
+              if (typeof data === 'string') {
+                const parsedData = JSON.parse(data);
+                if (parsedData.type === 'rate-update') {
+                  console.log('解析后的数据:', parsedData);
+                  if (parsedData.likes !== undefined) this.data.likes = parsedData.likes;
+                  if (parsedData.dislikes !== undefined) this.data.dislikes = parsedData.dislikes;
+                  this.updateUI();
+                } else {
+                  console.warn('非预期类型的数据:', parsedData);
+                }
+              } else {
+                console.warn('接收到非 JSON 格式数据:', data);
+              }
+            } catch (e) {
+              console.error('数据解析失败:', e, data);
+            }
+          });
+
+          this.commentButton.addEventListener('click', () => this.toggleCommentUI());
+          this.submitButton.addEventListener('click', () => this.submitComment());
+
+          NAF.connection.subscribeToDataChannel('comments-update', (senderId, dataType, data) => {
+            try {
+              const parsedData = JSON.parse(data);
+              if (parsedData.type === 'comment') {
+                this.comments.push(parsedData.comment);
+                this.updateCommentList();
+              }
+            } catch (e) {
+              console.error('解析评论数据失败:', e, data);
+            }
+          });
+
+          this.likeButton.addEventListener('click', () => this.updateCount('like'));
+          this.dislikeButton.addEventListener('click', () => this.updateCount('dislike'));
+        },
+
+        updateCount: function (type) {
+          if (type === 'like') this.data.likes++;
+          if (type === 'dislike') this.data.dislikes++;
+
+          console.log('正在广播数据:', { likes: this.data.likes, dislikes: this.data.dislikes });
+
+          NAF.connection.broadcastDataGuaranteed('rate-update', JSON.stringify({
+            type: 'rate-update',
+            likes: this.data.likes,
+            dislikes: this.data.dislikes
+          }));
+
+          this.updateUI();
+        },
+
+        toggleCommentUI: function () {
+          const visible = this.commentList.getAttribute('visible');
+          this.commentList.setAttribute('visible', !visible);
+          this.inputPlane.setAttribute('visible', !visible);
+          this.submitButton.setAttribute('visible', !visible);
+        },
+
+        submitComment: function () {
+          const nametag = document.querySelector('.nametag');
+          const username = nametag ? nametag.getAttribute('value') : 'Anonymous';
+
+          const inputText = prompt("Enter your comment:");
+          if (inputText && inputText.trim() !== '') {
+            const comment =`${username}: ${inputText}`;
+            this.comments.push(comment);
+            this.updateCommentList();
+
+            NAF.connection.broadcastDataGuaranteed('comments-update', JSON.stringify({
+              type: 'comment',
+              comment: comment
+            }));
+          }
+        },
+
+        updateCommentList: function () {
+          const formattedComments = this.comments.join('\n');
+          this.commentContent.setAttribute('value', formattedComments || 'No comments yet.');
+        },
+
+        updateUI: function () {
+          this.likeCountText.setAttribute('text', 'value', `Good: ${this.data.likes}`);
+this.dislikeCountText.setAttribute('text', 'value', `Bad: ${this.data.dislikes}`);
+
+          // this.likeCountText.setAttribute('text', 'value', Good: ${this.data.likes});
+          // this.dislikeCountText.setAttribute('text', 'value', Bad: ${this.data.dislikes});
+        }
+
+      });
+    </script>
+
+    <!-- New component for click-change-texture -->
+    <script>
+      AFRAME.registerComponent("click-change-texture", {
+        init: function () {
+          this.currentTexture = "image1"; // default texture
+
+          this.el.addEventListener("click", () => {
+            // Change to image2 locally
+            this.currentTexture = "image2";
+            this.el.setAttribute("material", "src", "#image2");
+            
+            // Broadcast texture change to all clients
+            NAF.connection.broadcastDataGuaranteed('texture-changed', JSON.stringify({ texture: "image2" }));
+          });
+
+          // Listen for texture changes from the network
+          NAF.connection.subscribeToDataChannel('texture-changed', (senderId, dataType, data, targetId) => {
+            try {
+              const parsedData = JSON.parse(data);
+              if (parsedData.texture) {
+                this.el.setAttribute("material", "src", `#${parsedData.texture}`);
+                this.currentTexture = parsedData.texture;
+              }
+            } catch (e) {
+              console.error('Failed to parse texture data:', e, data);
+            }
+          });
+        },
+      });
+    </script>
+  </head>
+
+  <body>
+    <a-scene
+      light="defaultLightsEnabled:false"
+      renderer="physicallyCorrectLights:true;colorManagement:true;stencil:true"
+      networked-scene="
+        connectOnLoad: true;
+        room: forest;
+        debug: true;
+        adapter: wseasyrtc;
+        audio: false;
+        video: false;
+      "
+      shadow="type: pcfsoft"
+      gltf-model="meshoptDecoderPath:https://unpkg.com/meshoptimizer@0.19.0/meshopt_decoder.js"
+      raycaster="far: 100; objects: .clickable,[link];"
+      cursor="rayOrigin: mouse"
+    >
+      <a-assets>
+        <!-- Template for synchronized rating UI -->
+        <template id="sync-template">
+          <a-entity>
+            <a-image id="rate-image" src="#image1" position="0 2 -4" scale="4 4 4"></a-image>
+            <a-text class="like-count" position="-1 0.2 -2" align="center" scale="0.5 0.5 0.5"></a-text>
+            <a-text class="dislike-count" position="1 0.2 -2" align="center" scale="0.5 0.5 0.5"></a-text>
+          </a-entity>
+        </template>
+
+        <!-- Template for the networked plane -->
+        <template id="plane-template">
+          <a-plane class="clickable" geometry="width:2; height:2;" material="src:#image1;"></a-plane>
+        </template>
+
+        <!-- Avatar template -->
+        <template id="avatar-template">
+          <a-entity player-info>
+            <a-entity class="model">
+              <a-text class="nametag" align="center" value="?" position="0 2.1 0" scale=".5 .5 .5"></a-text>
+            </a-entity>
+            <a-entity class="camera" position="0 1.6 0"></a-entity>
+          </a-entity>
+        </template>
+
+        <img id="thumbJapan" crossorigin="anonymous" src="https://cdn.aframe.io/link-traversal/thumbs/japan.png" />
+        <img id="thumbForest" crossorigin="anonymous" src="https://cdn.aframe.io/link-traversal/thumbs/forest.png" />
+        <a-asset-item id="my-model" src="./art_gallery.glb"></a-asset-item>
+        <img id="image1" src="./images/dragon.jpeg" />
+        <img id="image2" src="./images/chinese-dragon.png" />
+      </a-assets>
+
+      <a-entity id="scene">
+        <a-entity environment="preset:forest;shadow:true"></a-entity>
+        <a-entity light="type:ambient;intensity:0.5"></a-entity>
+        <a-entity gltf-model="#my-model" position="0 0.1 0" scale="1 1 1"></a-entity>
+        <a-link
+          change-room="on:obbcollisionstarted;room:japan;url:japan.html"
+          link="on:ignore"
+          href="japan"
+          position="-2 1.5 3"
+          image="#thumbJapan"
+        >
+          <a-box position="0 0 0.5" obb-collider visible="false"></a-box>
+        </a-link>
+      </a-entity>
+
+      <!-- Networked syncable content (rating system) -->
+      <a-entity id="syncable-content" networked="template:#sync-template" rate-counter>
+        <a-image id="rate-image" src="#image1" position="0 2 -4" scale="4 4 4"></a-image>
+        
+        <a-box id="like-button" class="clickable" position="-0.5 0.4 -2" width="0.5" height="0.2" depth="0.2" color="green">
+          <a-text class="like-count" value="Good: 0" position="0 0 0.1" align="center" scale="0.4 0.4 0.4"></a-text>
+        </a-box>
+      
+        <a-box id="dislike-button" class="clickable" position="0.5 0.4 -2" width="0.5" height="0.2" depth="0.2" color="red">
+          <a-text class="dislike-count" value="Bad: 0" position="0 0 0.1" align="center" scale="0.4 0.4 0.4"></a-text>
+        </a-box>
+
+        <a-box id="comment-button" class="clickable" position="0 0.4 -2" width="0.5" height="0.2" depth="0.2" color="blue">
+          <a-text value="Comments" align="center" position="0 0 0.11" scale="0.4 0.4 0.4"></a-text>
+        </a-box>
+
+        <a-entity id="comment-list" position="0 1 -2" visible="false">
+          <a-plane width="1.5" height="1.6" color="white" position="0 0.5 -0.01"></a-plane>
+          <a-text id="comment-content" value="No comments yet." align="left" position="-0.72 1.2 0" scale="0.4 0.4 0.4" color="black"></a-text>
+        </a-entity>
+
+        <a-plane id="input-plane" class="clickable" width="1.5" height="0.2" color="lightgray" position="0 0.6 -2" visible="false">
+          <a-text id="input-placeholder" value="Write a comment..." align="center" position="0 0 0.01" scale="0.4 0.4 0.4" color="black"></a-text>
+        </a-plane>
+        <a-box id="submit-comment-button" class="clickable" position="0 0.6 -2" width="1.5" height="0.2" depth="0.2" color="orange" visible="false">
+          <a-text value="Write a Message" align="center" position="0 0 0.11" scale="0.4 0.4 0.4"></a-text>
+        </a-box>
+      </a-entity>
+
+      <!-- Networked plane that changes texture on click -->
+      <a-entity
+        id="networked-plane"
+        networked="template:#plane-template;attachTemplateToLocal:false;"
+        click-change-texture
+        position="0 1 -3"
+      ></a-entity>
+
+      <a-entity
+        id="rig"
+        cursor-teleport="cameraRig: #rig; cameraHead: #player; collisionEntities: .environmentGround; ignoreEntities: .clickable,[link]"
+        simple-navmesh-constraint="navmesh:.environmentGround,.environmentDressing;fall:10;height:0;exclude:.navmesh-hole;"
+        movement-controls="fly:false;controls: gamepad, trackpad, keyboard, nipple;"
+        spawn-in-circle="radius:1"
+        networked="template:#avatar-template;attachTemplateToLocal:false"
+        player-info
+      >
+        <a-entity id="player" class="camera" camera position="0 1.6 0" look-controls>
+          <a-box obb-collider visible="false" height="0.4" depth="0.4" width="0.4"></a-box>
+        </a-entity>
+        <a-entity
+          id="left-hand"
+          networked-hand-controls="hand: left"
+          networked="template: #left-hand-default-template"
+          laser-controls="hand: left"
+          raycaster="showLine: true; far: 100; lineColor: white; objects: .clickable; interval:100;"
+          blink-controls="rotateOnTeleport: false; cameraRig: #rig; teleportOrigin: #player; collisionEntities: .navmesh;"
+        ></a-entity>
+        <a-entity
+          id="right-hand"
+          networked-hand-controls="hand:right"
+          networked="template:#right-hand-default-template"
+          laser-controls="hand: right"
+          raycaster="showLine: true; far: 100; lineColor: white; objects: .clickable; interval:100;"
+          blink-controls="rotateOnTeleport: false; cameraRig: #rig; teleportOrigin: #player; collisionEntities: .navmesh;"
+        ></a-entity>
+      </a-entity>
+    </a-scene>
+  </body>
+</html>
