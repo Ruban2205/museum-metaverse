@@ -1,24 +1,37 @@
-import './assets/style.css';
-import { render } from 'solid-js/web';
-import { Show, createEffect, createResource, createSignal, onMount } from 'solid-js';
-import { IoSettingsOutline } from 'solid-icons/io';
-import { Avatar, AvatarSelect, defaultOutfits, setGender, setOutfit } from './AvatarSelect';
-import { MicButton, nafAdapter } from './MicButton';
-import { UsernameInput } from './UsernameInput';
-import { ChatButton } from './Chat';
-import { UsersButton } from './UsersButton';
-import { ShareCameraButton, ShareScreenButton } from './ShareScreenButton';
-import './systems/video';
-import { uiSettings } from './config';
+import "./assets/style.css";
+import { render } from "solid-js/web";
+import {
+  Show,
+  createEffect,
+  createResource,
+  createSignal,
+  onMount,
+} from "solid-js";
+import { IoSettingsOutline } from "solid-icons/io";
+import {
+  Avatar,
+  AvatarSelect,
+  defaultOutfits,
+  setGender,
+  setOutfit,
+} from "./AvatarSelect";
+import { MicButton, nafAdapter } from "./MicButton";
+import { UsernameInput } from "./UsernameInput";
+import { ChatButton } from "./Chat";
+import { UsersButton } from "./UsersButton";
+import { ShareCameraButton, ShareScreenButton } from "./ShareScreenButton";
+import "./systems/video";
+import { uiSettings } from "./config";
 
 const [showSettings, setShowSettings] = createSignal(false);
 const [entered, setEntered] = createSignal(false);
 const [sceneLoaded, setSceneLoaded] = createSignal(false);
-export const [avatarSrc, setAvatarSrc] = createSignal('');
+export const [avatarSrc, setAvatarSrc] = createSignal("");
 
-export const avatarsBaseUrl = 'https://cdn.jsdelivr.net/gh/c-frame/valid-avatars-glb@c539a28/';
+export const avatarsBaseUrl =
+  "https://cdn.jsdelivr.net/gh/c-frame/valid-avatars-glb@c539a28/";
 const fetchAvatars = async () => {
-  const response = await fetch(avatarsBaseUrl + 'avatars.json');
+  const response = await fetch(avatarsBaseUrl + "avatars.json");
   if (!response.ok) {
     return [];
   }
@@ -33,7 +46,9 @@ const setRandomAvatar = () => {
   const outfits = defaultOutfits;
   const allAvatars = avatars();
   if (!allAvatars) return;
-  const filteredAvatars = allAvatars.filter((avatar) => outfits.includes(avatar.outfit));
+  const filteredAvatars = allAvatars.filter((avatar) =>
+    outfits.includes(avatar.outfit)
+  );
   const idx = Math.floor(Math.random() * filteredAvatars.length);
   const avatar = filteredAvatars[idx];
   setAvatarSrc(avatarsBaseUrl + avatar.model);
@@ -76,40 +91,40 @@ const SettingsScreen = () => {
 const EnterScreen = () => {
   return (
     <div class="naf-centered-fullscreen">
-        <div class="title-center">
+      <div class="title-center">
         <h1>ART GALLERY</h1>
       </div>
       <div class="bg-black/50 p-6 rounded-lg shadow-md w-full max-w-md">
-      <UserForm />
-      <button
-        type="button"
-        id="playButton"
-        class="btn min-w-[200px] bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition duration-300 cursor-pointer"
-        onClick={() => {
-          if (!avatarSrc()) {
-            setRandomAvatar();
-          }
+        <UserForm />
+        <button
+          type="button"
+          id="playButton"
+          class="btn min-w-[200px] bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition duration-300 cursor-pointer"
+          onClick={() => {
+            if (!avatarSrc()) {
+              setRandomAvatar();
+            }
 
-          setEntered(true);
-          const sceneEl = document.querySelector('a-scene');
-          // emit connect when the scene has loaded
-          const sceneLoadedCallback = () => {
-            setSceneLoaded(true);
-            // @ts-ignore
-            sceneEl?.emit('connect');
-          };
+            setEntered(true);
+            const sceneEl = document.querySelector("a-scene");
+            // emit connect when the scene has loaded
+            const sceneLoadedCallback = () => {
+              setSceneLoaded(true);
+              // @ts-ignore
+              sceneEl?.emit("connect");
+            };
 
-          // @ts-ignore
-          if (sceneEl.hasLoaded) {
-            sceneLoadedCallback();
-          } else {
             // @ts-ignore
-            sceneEl.addEventListener('loaded', sceneLoadedCallback);
-          }
-        }}
-      >
-        Enter
-      </button>
+            if (sceneEl.hasLoaded) {
+              sceneLoadedCallback();
+            } else {
+              // @ts-ignore
+              sceneEl.addEventListener("loaded", sceneLoadedCallback);
+            }
+          }}
+        >
+          Enter
+        </button>
       </div>
     </div>
   );
@@ -136,7 +151,9 @@ const TopBarRight = () => {
           class="btn text-sm"
           onClick={() => {
             // @ts-ignore
-            document.getElementById('rig').setAttribute('player-info', 'state', 'Dying');
+            document
+              .getElementById("rig")
+              .setAttribute("player-info", "state", "Dying");
           }}
         >
           Die
@@ -161,7 +178,7 @@ const BottomBarCenter = () => {
         <IoSettingsOutline size={24} />
       </button>
       <MicButton entity="#rig" />
-      <Show when={nafAdapter() === 'janus'}>
+      <Show when={nafAdapter() === "janus"}>
         <ShareCameraButton />
         <ShareScreenButton />
       </Show>
@@ -173,8 +190,8 @@ const BottomBarCenter = () => {
 
 const App = () => {
   onMount(() => {
-    const rig = document.getElementById('rig');
-    rig?.addEventListener('model-loaded', () => {
+    const rig = document.getElementById("rig");
+    rig?.addEventListener("model-loaded", () => {
       setAvatarLoading(false);
     });
   });
@@ -182,9 +199,9 @@ const App = () => {
   createEffect(() => {
     if (avatarSrc()) {
       setAvatarLoading(true);
-      const rig = document.getElementById('rig');
+      const rig = document.getElementById("rig");
       // @ts-ignore
-      rig.setAttribute('player-info', {
+      rig.setAttribute("player-info", {
         avatarSrc: avatarSrc(),
       });
     }
@@ -206,6 +223,6 @@ const App = () => {
   );
 };
 
-const root = document.createElement('div');
+const root = document.createElement("div");
 document.body.appendChild(root);
 render(() => <App />, root);
