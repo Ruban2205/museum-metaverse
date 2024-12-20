@@ -156,9 +156,12 @@
   }
 
   .naf-centered-fullscreen {
-    @apply bg-panel absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 px-3;
+    @apply bg-panel absolute inset-0 z-10 flex flex-col items-center justify-center gap-2;
   }
 
+.main-title{
+  @apply px-3; 
+}
 
   .naf-bar {
     @apply pointer-events-none absolute z-10 flex w-full items-center gap-4 [&>*]:pointer-events-auto;

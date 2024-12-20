@@ -92,7 +92,7 @@ const EnterScreen = () => {
   return (
     <div class="naf-centered-fullscreen">
       <div class="title-center">
-        <h1>ART GALLERY</h1>
+        <h1 class="main-title">ART GALLERY</h1>
       </div>
       <div class="bg-black/50 p-6 rounded-lg shadow-md w-full max-w-md">
         <UserForm />
