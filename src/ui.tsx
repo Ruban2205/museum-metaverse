@@ -79,11 +79,12 @@ const EnterScreen = () => {
         <div class="title-center">
         <h1>ART GALLERY</h1>
       </div>
+      <div class="bg-black/50 p-6 rounded-lg shadow-md w-full max-w-md">
       <UserForm />
       <button
         type="button"
         id="playButton"
-        class="btn min-w-[100px]"
+        class="btn min-w-[200px] bg-blue-500 text-white px-6 py-3 rounded-lg hover:bg-blue-600 transition duration-300 cursor-pointer"
         onClick={() => {
           if (!avatarSrc()) {
             setRandomAvatar();
@@ -109,6 +110,7 @@ const EnterScreen = () => {
       >
         Enter
       </button>
+      </div>
     </div>
   );
 };

@@ -1,5 +1,5 @@
 // Load required modules
-const http = require("http");                 // http server core module
+// const http = require("http");                 // http server core module
 const path = require("path");
 const express = require("express");           // web framework external module
 const socketIo = require("socket.io");        // web socket external module
@@ -9,11 +9,11 @@ const easyrtc = require("open-easyrtc");      // EasyRTC external module
 // Then stop it, change the lines here and run `npm start`.
 // To enable https on the node server, uncomment the next lines
 // and the webServer line down below.
-// const https = require("https");
-// const fs = require("fs");
-// const privateKey = fs.readFileSync("node_modules/.cache/webpack-dev-server/server.pem", "utf8");
-// const certificate = fs.readFileSync("node_modules/.cache/webpack-dev-server/server.pem", "utf8");
-// const credentials = { key: privateKey, cert: certificate };
+const https = require("https");
+const fs = require("fs");
+const privateKey = fs.readFileSync("node_modules/.cache/webpack-dev-server/server.pem", "utf8");
+const certificate = fs.readFileSync("node_modules/.cache/webpack-dev-server/server.pem", "utf8");
+const credentials = { key: privateKey, cert: certificate };
 
 // Set process name
 process.title = "networked-aframe-server";
@@ -41,9 +41,9 @@ if (process.env.NODE_ENV === "development") {
 app.use(express.static("public"));
 
 // Start Express http server
-const webServer = http.createServer(app);
+// const webServer = http.createServer(app);
 // To enable https on the node server, comment the line above and uncomment the line below
-// const webServer = https.createServer(credentials, app);
+const webServer = https.createServer(credentials, app);
 
 // Start Socket.io so it attaches itself to Express server
 const socketServer = socketIo.listen(webServer, { "log level": 1 });
@@ -133,6 +133,7 @@ easyrtc.listen(app, socketServer, null, (err, rtcRef) => {
 });
 
 // Listen on port
+// webServer.listen(port, '192.168.212.171', () => {
 webServer.listen(port, () => {
   console.log("listening on http://localhost:" + port);
 });

@@ -146,22 +146,23 @@ export const AvatarSelect: Component<Props> = (props) => {
             <Show when={avatar.gender === gender() && avatar.outfit === outfit()}>
               <button
                 id={`avatar-${idx()}`}
-                class="relative h-52 w-52 shrink-0 cursor-pointer"
+                class="relative h-52 w-52 shrink-0 cursor-pointer flexitems-center justify-center bg-transparent border-none"
                 disabled={avatarLoading()}
                 onClick={() => {
                   setAvatarSrc(avatarsBaseUrl + avatar.model);
                 }}
               >
                 <img
-                  class="absolute inset-0"
+                  // class="absolute inset-0"
                   alt={`avatar ${avatar.text}`}
                   loading="lazy"
                   src={avatarsBaseUrl + avatar.image}
                   width="208"
                   height="208"
+                  class="rounded-full w-40 h-40 overflow-hidden bg-transparent border-none"
                 />
                 <div
-                  class="absolute inset-0 bg-white/30 backdrop-brightness-125"
+                  class="absolute inset-0 bg-transparent"
                   classList={{ hidden: avatarSrc().endsWith(avatar.model) }}
                 ></div>
               </button>
